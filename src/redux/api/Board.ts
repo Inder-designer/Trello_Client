@@ -155,7 +155,7 @@ export const boardApi = baseApi.injectEndpoints({
                     dispatch(
                         boardApi.util.updateQueryData('getAllBoards', {}, (draft) => {
                             const board = draft.ownedBoards.find(b => b._id === boardId);
-                            if (!board) return;
+                            if (!board || arg.action === 'reject') return;
                             const alreadyMember = board.members.some(m => m._id === requestBy._id);
                             if (!alreadyMember) board.members.push(requestBy._id);
                         })
@@ -164,8 +164,10 @@ export const boardApi = baseApi.injectEndpoints({
                         boardApi.util.updateQueryData('getBoard', boardId, (draft: IBoard) => {
                             const req = draft.joinRequests.find(req => req._id === arg.id)
                             if (!req) return;
-                            const alreadyMember = draft.members.some(m => m._id === requestBy._id);
-                            if (!alreadyMember) draft.members.push(requestBy);
+                            if (arg.action === 'accept') {
+                                const alreadyMember = draft.members.some(m => m._id === requestBy._id);
+                                if (!alreadyMember) draft.members.push(requestBy);
+                            }
                             draft.joinRequests = draft.joinRequests.filter(req => req._id !== arg.id);
                         })
                     );

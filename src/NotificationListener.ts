@@ -8,7 +8,7 @@ import { useNotificationsQuery } from "./redux/api/common";
 
 const NotificationListener = () => {
     const dispatch = useDispatch<AppDispatch>();
-    const { data: notifications } = useNotificationsQuery({})
+    const { data: notifications } = useNotificationsQuery({ page: 1, limit: 10, unRead: true });
     const user = useSelector((state: { auth: { user: IUser | null } }) => state.auth.user);
 
     useEffect(() => {

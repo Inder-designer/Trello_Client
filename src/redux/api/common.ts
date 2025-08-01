@@ -21,7 +21,10 @@ export const carApi = baseApi.injectEndpoints({
             transformResponse: (response: ApiResponse) => response.data
         }),
         notifications: builder.query({
-            query: () => NOTIFICATION_GET,
+            query: ({ page, limit, unRead }) => {
+                console.log(`Fetching notifications with unRead=${unRead}`);
+                return (`${NOTIFICATION_GET}?page=${page}&limit=${limit}${unRead ? '&unRead=true' : ''}`)
+            },
             transformResponse: (response: ApiResponse) => response.data
         }),
         notificationRead: builder.mutation({

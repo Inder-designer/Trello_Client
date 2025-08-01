@@ -230,6 +230,7 @@ const CardComponent = ({ card, board, isOwner, isClosed, autoOpenCardId, setAuto
                     isDialogOpen={isDetailsOpen}
                     setIsDialogOpen={handleDetailsClose}
                     isClosed={isClosed}
+                    setSearchParams={setSearchParams}
                 />
             )}
         </>

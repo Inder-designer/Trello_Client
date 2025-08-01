@@ -3,7 +3,7 @@ import { ICard } from '@/Types/ICard';
 import { format, formatDistanceToNow, set } from 'date-fns';
 import { Modal, ModalBody, Button } from 'flowbite-react'
 import { Activity, Flag, MessageSquare, SmilePlus, X } from 'lucide-react';
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import EmojiPicker from 'emoji-picker-react';
 import { formatReactedUsersTooltip } from '@/utils/Common';
 import { useSelector } from 'react-redux';
@@ -11,13 +11,14 @@ import Loader from '../Loaders/Loader';
 import ConfirmPopup from '../Popup/ConfirmPopup';
 import { IUser } from '@/Types/IUser';
 import CardDetailsSkeleton from '../Skeleton/CardDetailsSkeleton';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 interface CardDetailsProps {
     isDialogOpen: boolean;
     setIsDialogOpen: (value: boolean) => void;
     cardId: string;
     isClosed?: boolean;
+    setSearchParams?: (params: URLSearchParams | ((prev: URLSearchParams) => URLSearchParams)) => void;
 }
 const priorityColors = {
     low: 'bg-green-500',
@@ -29,7 +30,10 @@ const unifiedToEmoji = (unified: string) => {
     return String.fromCodePoint(...unified.split('-').map(u => parseInt(u, 16)));
 }
 
-const CardDetails = ({ isDialogOpen, setIsDialogOpen, cardId, isClosed }: CardDetailsProps) => {
+const CardDetails = ({ isDialogOpen, setIsDialogOpen, cardId, isClosed, setSearchParams }: CardDetailsProps) => {
+    const location = useLocation();
+    const commentIdFromUrl = new URLSearchParams(location.search).get('comment');
+    const commentRef = useRef<HTMLDivElement | null>(null);
     const user = useSelector((state: { auth: { user: IUser | null } }) => state.auth.user);
     const [addComment, { isLoading: isAddingComment }] = useAddCommentMutation()
     const [deleteComment, { isLoading: isDeletingComment }] = useDeleteCommentMutation()
@@ -85,11 +89,31 @@ const CardDetails = ({ isDialogOpen, setIsDialogOpen, cardId, isClosed }: CardDe
             console.error("Delete failed:", err);
         }
     };
-    console.log(card?.attachments);
+
+    useEffect(() => {
+        if (commentIdFromUrl && card?.comments) {
+            const commentElement = document.getElementById(`comment-${commentIdFromUrl}`);
+            if (commentElement) {
+                commentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }, [commentIdFromUrl, card?.comments]);
+
+    const handleClose = () => {
+        setIsDialogOpen(false);
+        if (setSearchParams) {
+            setSearchParams(prev => {
+                const newParams = new URLSearchParams(prev);
+                newParams.delete('c');
+                newParams.delete('comment');
+                return newParams;
+            });
+        }
+    };
 
     return (
         <>
-            <Modal show={isDialogOpen} onClose={() => setIsDialogOpen(false)}>
+            <Modal show={isDialogOpen} onClose={handleClose}>
                 <ModalBody className='p-0'>
                     {isLoadingCard ?
                         <CardDetailsSkeleton />
@@ -97,14 +121,14 @@ const CardDetails = ({ isDialogOpen, setIsDialogOpen, cardId, isClosed }: CardDe
                             {card?.attachments?.length > 0 && card.attachments[0]?.url && card.attachments[0]?.type !== "pdf" ? (
                                 <div className='h-40 w-full relative bg-slate-200 overflow-hidden rounded-lg'>
                                     <img src={card?.attachments[0]?.url} alt="" className='w-full h-full object-contain' />
-                                    <button className="text-text1 absolute top-2 right-2" onClick={() => setIsDialogOpen(false)}>
+                                    <button className="text-text1 absolute top-2 right-2" onClick={handleClose}>
                                         <X />
                                     </button>
                                 </div>
                             )
                                 : (<div className="flex items-center justify-between px-6 py-4 border-b border-border1">
                                     <h4 className="text-text1 text-lg lg:text-xl font-semibold">{card?.title}</h4>
-                                    <button className="text-text1" onClick={() => setIsDialogOpen(false)}>
+                                    <button className="text-text1" onClick={handleClose}>
                                         <X />
                                     </button>
                                 </div>
@@ -215,7 +239,12 @@ const CardDetails = ({ isDialogOpen, setIsDialogOpen, cardId, isClosed }: CardDe
                                                 {card?.comments?.length > 0 ? (
                                                     <div className="space-y-3">
                                                         {card.comments.map((comment, index) => (
-                                                            <div key={index} className="p-3 bg-gray-100 rounded shadow-sm">
+                                                            <div
+                                                                key={index}
+                                                                id={`comment-${comment._id}`}
+                                                                ref={comment._id === commentIdFromUrl ? commentRef : null}
+                                                                className={`p-3 rounded shadow-sm ${comment._id === commentIdFromUrl ? 'border-l-2 border-blue-500 bg-blue-100' : 'bg-gray-100'}`}
+                                                            >
                                                                 <div className="flex items-start gap-3">
                                                                     <div className="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center">
                                                                         {comment?.userId?.initials}
