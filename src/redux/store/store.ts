@@ -3,12 +3,14 @@ import { setupListeners } from '@reduxjs/toolkit/query'
 import { baseApi } from '../baseApi';
 import authReducer from '../Slices/userAuthSlice';
 import boardReducer from '../Slices/boardSlice'
+import notificationReducer from '../Slices/NotificationSlice'
 
 export const store = configureStore({
     reducer: {
         [baseApi.reducerPath]: baseApi.reducer,
         auth: authReducer,
         board: boardReducer,
+        notification: notificationReducer,
     },
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware().concat(baseApi.middleware),

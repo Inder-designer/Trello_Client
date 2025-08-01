@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Button } from '../ui/button'
 import { Check, Copy, User, Users, X } from 'lucide-react'
@@ -6,17 +6,25 @@ import { Label } from '../ui/label'
 import { Input } from '../ui/input'
 import { toast } from 'sonner'
 import { Badge } from '../ui/badge'
-import { useDeleteInviteLinkMutation, useGenerateInviteMutation } from '@/redux/api/Board'
+import { useDeleteInviteLinkMutation, useGenerateInviteMutation, useRequestActionMutation } from '@/redux/api/Board'
 import { format } from 'date-fns'
+import Loader from '../Loaders/Loader'
 
 const ShareDialog = ({ isShareDialogOpen, setIsShareDialogOpen, board }) => {
     const [generateInvite, { isLoading }] = useGenerateInviteMutation()
     const [deleteInvite, { isLoading: deleteLoading }] = useDeleteInviteLinkMutation()
-    const [iniviteLink, setInviteLink] = useState(board?.inviteToken || "");
+    const [requestAction, { isLoading: requestLoading }] = useRequestActionMutation()
+    const [inviteLink, setInviteLink] = useState(board?.inviteToken || "");
     const [copySuccess, setCopySuccess] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [activeTab, setActiveTab] = useState<'members' | 'requests'>('members');
     const joinRequests = board?.joinRequests || [];
+
+    useEffect(() => {
+        if (board) {
+            setInviteLink(board?.inviteToken || "");
+        }
+    }, [board]);
 
     const handleShare = async () => {
         const shareUrl = window.location.href;
@@ -48,6 +56,23 @@ const ShareDialog = ({ isShareDialogOpen, setIsShareDialogOpen, board }) => {
             });
         }
     }
+
+    const handleRequestAction = async (action, request) => {
+        try {
+            await requestAction({ request, action, id: request._id }).unwrap();
+            if (action === 'accept') {
+                toast.success(`${request.requestBy.fullName} added to ${board.title}`);
+            } else {
+                toast.success("Request deleted");
+            }
+        } catch (error) {
+            console.error(`Failed to ${action} request:`, error);
+            toast.error(`Failed to ${action} request`, {
+                description: "Please try again later.",
+            });
+        }
+    };
+
     return (
         <>
             <Dialog
@@ -95,12 +120,12 @@ const ShareDialog = ({ isShareDialogOpen, setIsShareDialogOpen, board }) => {
                         </div>
                         <div>
                             <p className='text-sm'>Anyone with the link can join as a member</p>
-                            {iniviteLink ? (
-                                <div className='flex items-center gap-2'>
+                            {inviteLink ? (
+                                <div className='flex items-center gap-2 mt-1'>
                                     <button
                                         className='text-blue-500 hover:underline text-xs underline-offset-2'
                                         onClick={() => {
-                                            navigator.clipboard.writeText(`http://localhost:8080/invite/${board._id}?invite-token=${iniviteLink}`);
+                                            navigator.clipboard.writeText(`http://localhost:8080/invite/${board._id}?invite-token=${inviteLink}`);
                                             toast('Invite link copied!', {
                                                 description: 'Share this link with your team members.',
                                             });
@@ -108,7 +133,7 @@ const ShareDialog = ({ isShareDialogOpen, setIsShareDialogOpen, board }) => {
                                     >
                                         Copy Link
                                     </button>
-                                    <span>.</span>
+                                    <span className='w-1 h-1 rounded-full bg-gray-600'></span>
                                     <button
                                         className='text-blue-500 hover:underline text-xs underline-offset-2'
                                         onClick={() => setShowDeleteConfirm(true)}
@@ -167,10 +192,10 @@ const ShareDialog = ({ isShareDialogOpen, setIsShareDialogOpen, board }) => {
                         <div className="space-y-2">
                             <div className='flex items-center gap-4 text-sm border-b border-border'>
                                 <button
-                                    className={`pb-2 border-b-2 ${activeTab === 'members' ? 'border-blue-600 text-blue-600' : 'border-transparent'}`}
+                                    className={`pb-2 flex items-center gap-1 border-b-2 ${activeTab === 'members' ? 'border-blue-600 text-blue-600' : 'border-transparent'}`}
                                     onClick={() => setActiveTab('members')}
                                 >
-                                    Board Members
+                                    Board Members {board?.members.length > 0 && <span className='text-sm '>({board.members.length})</span>}
                                 </button>
                                 <button
                                     className={`pb-2 flex items-center gap-1 border-b-2 ${activeTab === 'requests' ? 'border-blue-600 text-blue-600' : 'border-transparent'}`}
@@ -213,8 +238,13 @@ const ShareDialog = ({ isShareDialogOpen, setIsShareDialogOpen, board }) => {
                                                     </div>
                                                 </div>
                                                 <div className="flex gap-2">
-                                                    <button className='text-sm bg-gray-200 hover:bg-gray-300 duration-300 px-3 py-1.5 rounded' onClick={() => {/* accept logic here */ }}>Accept</button>
-                                                    <button className='text-sm bg-gray-200 hover:bg-gray-300 duration-300 px-3 py-1.5 rounded' onClick={() => {/* reject logic here */ }}><X size={16} /></button>
+                                                    {requestLoading ? <Loader type='bar' />
+                                                        :
+                                                        <>
+                                                            <button className='text-sm bg-gray-200 hover:bg-gray-300 duration-300 px-3 py-1.5 rounded' onClick={() => handleRequestAction('accept', req)}>Accept</button>
+                                                            <button className='text-sm bg-gray-200 hover:bg-gray-300 duration-300 px-3 py-1.5 rounded' onClick={() => handleRequestAction('reject', req)}><X size={16} /></button>
+                                                        </>
+                                                    }
                                                 </div>
                                             </div>
                                         ))

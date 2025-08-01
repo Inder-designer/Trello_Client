@@ -5,18 +5,42 @@ import { IBoard } from '@/Types/IBoard'
 import { Delete, List, Trash, Users } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import AddBoard from './AddBoard'
+import AddBoard from '../Modals/AddBoard'
 import { Link } from 'react-router-dom'
+import { showConfirmDialog, showLoadingDialog } from '@/components/Dialog/Comman'
 
+function escapeHTML(str: string) {
+    return str.replace(/[&<>"']/g, function (match) {
+        const escape: Record<string, string> = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+        };
+        return escape[match];
+    });
+}
 const BoardCard = ({ board, isOwned }: { board: IBoard, isOwned?: boolean }) => {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [deleteBoard] = useDeleteBoardMutation()
 
     const handleDeleteBoard = async (id: string) => {
+        const confirmed = await showConfirmDialog(
+            `Are you sure you want to delete  <span class="font-bold text-red-400">${escapeHTML(board.title)}</span> board?`,
+            "This action cannot be undone. All lists and cards will be permanently deleted.",
+            {
+                confirmButtonText: "Delete",
+                cancelButtonText: "Cancel",
+                icon: "warning"
+            }
+        );
+        if (!confirmed) return;
+        showLoadingDialog("Deleting...");
         await deleteBoard(id)
             .unwrap()
             .then(() => {
-                toast.success("Board Delete Successfully")
+                toast.success("Board Deleted Successfully")
             })
             .catch((err) => {
                 toast.error(err?.data?.message || "Failed to delete board")

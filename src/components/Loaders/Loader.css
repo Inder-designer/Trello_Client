@@ -1,0 +1,40 @@
+/* Bar Loader */
+.custom-loader.bar {
+  --c:linear-gradient(#766DF4 0 0);
+  background: 
+    var(--c) 0%   50%,
+    var(--c) 50%  50%,
+    var(--c) 100% 50%;
+  background-size:4.5px 50%;
+  background-repeat: no-repeat;
+  animation: bar .8s infinite linear;
+}
+@keyframes bar {
+   20% {background-size:4.5px 20% ,4.5px 50% ,4.5px 50% }
+    40% {background-size:4.5px 100%,4.5px 20% ,4.5px 50% }
+    60% {background-size:4.5px 50% ,4.5px 100%,4.5px 20% }
+    80% {background-size:4.5px 50% ,4.5px 50% ,4.5px 100%}
+}
+
+/* Dot Loader */
+.custom-loader.dot {
+  width: 50px;
+  height: 12px;
+  background: radial-gradient(circle closest-side, #766df4 90%, #0000) 0% 50%,
+    radial-gradient(circle closest-side, #766df4 90%, #0000) 50% 50%,
+    radial-gradient(circle closest-side, #766df4 90%, #0000) 100% 50%;
+  background-size: calc(100% / 3) 100%;
+  background-repeat: no-repeat;
+  animation: dot 1s infinite linear;
+}
+@keyframes dot {
+  33% {
+    background-size: calc(100% / 3) 0%, calc(100% / 3) 100%, calc(100% / 3) 100%;
+  }
+  50% {
+    background-size: calc(100% / 3) 100%, calc(100% / 3) 0%, calc(100% / 3) 100%;
+  }
+  66% {
+    background-size: calc(100% / 3) 100%, calc(100% / 3) 100%, calc(100% / 3) 0%;
+  }
+}

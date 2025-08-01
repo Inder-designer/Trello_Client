@@ -2,17 +2,14 @@ import { FormikInput } from '@/components/CommanFields/FormikInput'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useCreateListMutation } from '@/redux/api/List'
-import { addNewList } from '@/redux/Slices/boardSlice'
 import { DialogDescription } from '@radix-ui/react-dialog'
 import { Form, Formik } from 'formik'
 import { Plus } from 'lucide-react'
-import { useDispatch } from 'react-redux'
 import { toast } from 'sonner'
 import * as Yup from 'yup'
 
 const AddList = ({ isCreateListOpen, setIsCreateListOpen, boardId }) => {
-    const [addList] = useCreateListMutation()
-    const dispatch = useDispatch()
+    const [addList, { isLoading }] = useCreateListMutation()
 
     const listValidation = Yup.object().shape({
         title: Yup.string().required("Title is required"),
@@ -21,10 +18,9 @@ const AddList = ({ isCreateListOpen, setIsCreateListOpen, boardId }) => {
     const handlesubmit = async (values) => {
         await addList({ ...values, boardId })
             .unwrap()
-            .then((res) => {
+            .then(() => {
                 toast.success("New List Created Successfully")
                 setIsCreateListOpen(false)
-                dispatch(addNewList(res))
             })
             .catch((err) => {
                 toast.error(err?.data?.message || "Failed to create list")
@@ -68,9 +64,8 @@ const AddList = ({ isCreateListOpen, setIsCreateListOpen, boardId }) => {
                                         />
                                     </div>
                                     <div>
-                                        <Button disabled={!values.title.trim()}
-                                        >
-                                            Add List
+                                        <Button disabled={!values.title.trim() || isLoading} type='submit' className="disabled:opacity-50 w-full">
+                                           {isLoading ? "Adding..." : "Add List"}
                                         </Button>
                                     </div>
                                 </div>

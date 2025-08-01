@@ -1,6 +1,6 @@
 import { ApiResponse } from "../../Types/ApiResponse";
 import { baseApi } from "../baseApi";
-import { UPLOAD_MULTI, UPLOAD_SINGLE } from "../routes/routes";
+import { NOTIFICATION_GET, NOTIFICATION_READ, UPLOAD_MULTI, UPLOAD_SINGLE } from "../routes/routes";
 
 export const carApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -20,7 +20,19 @@ export const carApi = baseApi.injectEndpoints({
             }),
             transformResponse: (response: ApiResponse) => response.data
         }),
+        notifications: builder.query({
+            query: () => NOTIFICATION_GET,
+            transformResponse: (response: ApiResponse) => response.data
+        }),
+        notificationRead: builder.mutation({
+            query: (notificationId: string) => ({
+                url: NOTIFICATION_READ,
+                method: 'POST',
+                body: { notificationId }
+            }),
+            transformResponse: (response: ApiResponse) => response.data
+        }),
     }),
 });
 
-export const { useUploadSingleMutation, useUploadMultiMutation } = carApi;
+export const { useUploadSingleMutation, useUploadMultiMutation, useNotificationsQuery, useNotificationReadMutation } = carApi;

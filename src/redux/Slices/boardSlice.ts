@@ -2,8 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     boardData: null,
-    lists: [],
-    cards: [],
 };
 
 const boardStateSlice = createSlice({

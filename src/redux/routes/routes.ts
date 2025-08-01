@@ -15,16 +15,19 @@ export const USER_CHANGE_PASSWORD = "/user/change-password"
 export const BOARD_GET_ALL = "/board/all"
 export const BOARD_CREATE = "/board/new"
 export const BOARD_DELETE = (id: string) => `/board/${id}`
+export const BOARD_CLOSE_TOGGLE = (id: string) => `/board/${id}`
 export const BOARD_UPDATE = (id: string) => `/board/${id}`
 export const BOARD_GET = (id: string) => `/board/${id}`
+export const BOARD_LEAVE = (id: string) => `/board/leave/${id}`
 
 // Invite
 export const REQUEST_JOIN = `/board/request-join`
 export const REQUEST_STATUS = (id: string) => `/board/request-status/${id}`
+export const REQUEST_ACTION = (id: string) => `/board/request-join/${id}`
 export const INVITE_GENERATE = (id: string) => `/board/generate-invite-token/${id}`
-export const INVITE_LINK_DELETE = (id: string) => `/board/delete-invite-token/${id}`
 export const INVITE_LINK_VERIFY = `/board/verify-invite-token`
 export const INVITE_ACCEPT = `/board/join-with-token`
+export const INVITE_LINK_DELETE = (id: string) => `/board/delete-invite-token/${id}`
 
 // List
 export const LIST_CREATE = "/board/add-list"
@@ -39,7 +42,11 @@ export const CARD_MOVE = (id: string) => `/board/move-card/${id}`
 export const CARD_GET_ALL = (id: string) => `/board/cards/${id}`
 export const CARD_GET = (id: string) => `/board/card/${id}`
 export const CARD_COMMENT_ADD = `/add-comment`
+export const CARD_COMMENT_DELETE = `/delete-comment`
 export const CARD_COMMENT_REACT = `/react-comment`
+
+export const NOTIFICATION_GET = `/notifications`
+export const NOTIFICATION_READ = `/notification/read`
 
 // Upload
 export const UPLOAD_SINGLE = "/upload-single"

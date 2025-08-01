@@ -1,6 +1,6 @@
 import { ApiResponse } from "../../Types/ApiResponse";
 import { baseApi } from "../baseApi";
-import { CARD_COMMENT_ADD, CARD_COMMENT_REACT, CARD_CREATE, CARD_DELETE, CARD_GET, CARD_GET_ALL, CARD_MOVE, CARD_UPDATE } from "../routes/routes";
+import { CARD_COMMENT_ADD, CARD_COMMENT_DELETE, CARD_COMMENT_REACT, CARD_CREATE, CARD_DELETE, CARD_GET, CARD_GET_ALL, CARD_MOVE, CARD_UPDATE } from "../routes/routes";
 
 export const cardApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -52,6 +52,14 @@ export const cardApi = baseApi.injectEndpoints({
             }),
             transformResponse: (response: ApiResponse) => response.data,
         }),
+        deleteComment: builder.mutation({
+            query: (commentId) => ({
+                url: CARD_COMMENT_DELETE,
+                method: 'DELETE',
+                body: commentId
+            }),
+            transformResponse: (response: ApiResponse) => response.data,
+        }),
         reactComment: builder.mutation({
             query: (data) => ({
                 url: CARD_COMMENT_REACT,
@@ -63,4 +71,4 @@ export const cardApi = baseApi.injectEndpoints({
     }),
 });
 
-export const { useCreateCardMutation, useGetCardsQuery, useUpdateCardMutation, useMoveCardMutation, useDeleteCardMutation, useGetCardQuery, useAddCommentMutation, useReactCommentMutation } = cardApi;
+export const { useCreateCardMutation, useGetCardsQuery, useUpdateCardMutation, useMoveCardMutation, useDeleteCardMutation, useGetCardQuery, useAddCommentMutation, useReactCommentMutation, useDeleteCommentMutation } = cardApi;

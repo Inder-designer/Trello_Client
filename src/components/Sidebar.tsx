@@ -1,30 +1,23 @@
-import { useState } from 'react';
-import { Plus, Users, Filter, Archive, List, User, Crown } from 'lucide-react';
+import { List, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Board } from '@/pages/Index';
 import { Link, useParams } from 'react-router-dom';
 import { useGetAllBoardsQuery } from '@/redux/api/Board';
 import { IBoard } from '@/Types/IBoard';
 
 interface SidebarProps {
-  selectedBoard?: Board | null;
-  onSelectBoard?: (board: Board | null) => void;
-  onUpdateBoards?: (boards: Board[]) => void;
+  selectedBoard?: IBoard | null;
+  onSelectBoard?: (board: IBoard | null) => void;
+  onUpdateBoards?: (boards: IBoard[]) => void;
 }
 
 const Sidebar = () => {
-  const { id } = useParams<{ id: string }>("");
+  const { id } = useParams<{ id: string }>();
   const { data: boards } = useGetAllBoardsQuery({})
   const allBoards = [
     ...(boards?.ownedBoards || []),
     ...(boards?.memberBoards || [])
   ];
-  console.log(boards);
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">

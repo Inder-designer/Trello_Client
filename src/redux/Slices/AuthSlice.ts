@@ -1,6 +1,13 @@
+import { IUser } from '@/Types/IUser';
 import { createSlice } from '@reduxjs/toolkit';
 
-const initialState = {
+interface initialStateType {
+    user: IUser | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+}
+
+const initialState: initialStateType = {
     user: null,
     isAuthenticated: false,
     isLoading: true
@@ -22,7 +29,5 @@ const authSlice = createSlice({
         },
     }
 });
-
-
 export const { setUser, clearUser } = authSlice.actions;
 export default authSlice.reducer;

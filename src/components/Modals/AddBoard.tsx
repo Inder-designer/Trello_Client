@@ -1,7 +1,6 @@
 import { FormikInput } from '@/components/CommanFields/FormikInput'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { colorOptions } from '@/Constants/common'
 import { Form, Formik } from 'formik'
 import { Pencil, Plus, X } from 'lucide-react'
@@ -9,7 +8,6 @@ import * as Yup from 'yup'
 import { Modal, ModalBody } from "flowbite-react";
 import { useCreateBoardMutation, useUpdateBoardMutation } from '@/redux/api/Board'
 import { toast } from 'sonner'
-import { useState } from 'react'
 import { IBoard } from '@/Types/IBoard'
 
 interface AddBoardProps {
@@ -81,9 +79,9 @@ const AddBoard = ({ board, isDialogOpen, setIsDialogOpen }: AddBoardProps) => {
                                 background: board?.background || "",
                             }}
                             validationSchema={boardValidation}
-                            onSubmit={(values) => handlesubmit(values)}
+                            onSubmit={(values) => handlesubmit(values as IBoard)}
                         >
-                            {({ setFieldValue, values }) => (
+                            {({ setFieldValue, values, dirty }) => (
                                 <Form>
                                     <div className="space-y-4">
                                         <div>
@@ -98,7 +96,7 @@ const AddBoard = ({ board, isDialogOpen, setIsDialogOpen }: AddBoardProps) => {
                                             <FormikInput
                                                 name='description'
                                                 type='textarea'
-                                                label='Board Title'
+                                                label='Description'
                                                 placeholder="Enter board description (optional)"
                                                 className='resize-none'
                                             />
@@ -117,12 +115,14 @@ const AddBoard = ({ board, isDialogOpen, setIsDialogOpen }: AddBoardProps) => {
                                             </div>
                                         </div>
                                         <div className="flex justify-end space-x-3 pt-4">
-                                            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                                            <button onClick={() => setIsDialogOpen(false)}
+                                                disabled={isLoading || updateBoardLoading}
+                                                className='border border-gray-200 text-gray-700 py-2 px-4 rounded hover:bg-gray-100 disabled:cursor-not-allowed'>
                                                 Cancel
-                                            </Button>
-                                            <Button disabled={isLoading || updateBoardLoading || !values.title.trim()}>
-                                                {board ? "Update" : "Create Board"}
-                                            </Button>
+                                            </button>
+                                            <button disabled={isLoading || updateBoardLoading || !values.title.trim() || !dirty} type="submit" className="bg-gray-700 text-white py-2 px-4 rounded hover:bg-gray-800 disabled:hover:bg-gray-700 disabled:cursor-default cursor-pointer">
+                                                {board ? updateBoardLoading ? "Updating..." : "Update" : isLoading ? "Creating..." : "Create Board"}
+                                            </button>
                                         </div>
                                     </div>
                                 </Form>

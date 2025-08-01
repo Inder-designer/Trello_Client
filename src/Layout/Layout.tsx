@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '@/components/Sidebar';
-import BoardView from '@/components/BoardView';
-import AllBoardsView from '@/components/AllBoardsView';
 import { Outlet } from 'react-router';
 import { useGetAllBoardsQuery } from '@/redux/api/Board';
-import useSocket from '@/hooks/useSocket';
+import { socket } from '@/utils/socket';
+import { useSelector } from 'react-redux';
+import { useBoardSocket } from '@/hooks/useBoardSocket';
+import { useCardSocket } from '@/hooks/UseCardSocket';
+import { IUser } from '@/Types/IUser';
+import NotificationListener from '@/NotificationListener';
 
 export interface Member {
     id: string;
@@ -69,99 +72,59 @@ export interface Board {
 }
 
 const Layout = () => {
-    useSocket();
+    const user = useSelector((state: { auth: { user: IUser | null } }) => state.auth.user);
     const { data } = useGetAllBoardsQuery({})
 
-    const [currentBoard, setCurrentBoard] = useState<Board>({
-        id: '1',
-        title: 'Project Management Board',
-        description: 'Main project tracking board',
-        color: 'bg-gradient-to-r from-blue-500 to-purple-600',
-        members: [
-            { id: '1', name: 'John Doe', email: 'john@example.com', role: 'admin' },
-            { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'member' },
-            { id: '3', name: 'Mike Johnson', email: 'mike@example.com', role: 'member' },
-            { id: '4', name: 'Sarah Wilson', email: 'sarah@example.com', role: 'member' }
-        ],
-        lists: [
-            {
-                id: '1',
-                title: 'To Do',
-                position: 0,
-                cards: [
-                    {
-                        id: '1',
-                        title: 'Setup project structure',
-                        description: 'Create the basic project structure and configuration',
-                        labels: [{ id: '1', name: 'Setup', color: 'bg-blue-500' }],
-                        position: 0,
-                        priority: 'high',
-                        reporterId: '1',
-                        comments: [],
-                        activities: []
-                    }
-                ]
-            },
-            {
-                id: '2',
-                title: 'In Progress',
-                position: 1,
-                cards: []
-            },
-            {
-                id: '3',
-                title: 'Review',
-                position: 2,
-                cards: []
-            },
-            {
-                id: '4',
-                title: 'Done',
-                position: 3,
-                cards: []
-            }
-        ]
-    });
+    useEffect(() => {
+        if (user && (data?.ownedBoards?.length || data?.memberBoards?.length)) {
+            const payload = {
+                userId: user._id,
+                ownedBoards: data.ownedBoards?.map((b) => b._id) || [],
+                memberBoards: data.memberBoards?.map((b) => b._id) || [],
+            };
 
-    const [boards] = useState<Board[]>([currentBoard]);
-    const [selectedBoard, setSelectedBoard] = useState<Board | null>(currentBoard);
+            socket.emit("joinAllBoards", payload);
+            console.log("Joined all board rooms:", payload);
 
-    const updateBoard = (updatedBoard: Board) => {
-        setCurrentBoard(updatedBoard);
-        if (selectedBoard?.id === updatedBoard.id) {
-            setSelectedBoard(updatedBoard);
+            return () => {
+                // Optional: leave all rooms on unmount if needed
+                payload.ownedBoards.forEach((boardId) => {
+                    socket.emit("leaveBoardRoom", {
+                        boardId,
+                        userId: user._id,
+                        isOwner: true,
+                    });
+                });
+
+                payload.memberBoards.forEach((boardId) => {
+                    socket.emit("leaveBoardRoom", {
+                        boardId,
+                        userId: user._id,
+                        isOwner: false,
+                    });
+                });
+            };
         }
-    };
+    }, [user?._id, data?.ownedBoards, data?.memberBoards]);
 
-    const handleSelectBoard = (board: Board | null) => {
-        setSelectedBoard(board);
-        if (board) {
-            setCurrentBoard(board);
-        }
-    };
-
-    const updateBoards = (updatedBoards: Board[]) => {
-        const updatedCurrentBoard = updatedBoards.find(board => board.id === currentBoard.id);
-        if (updatedCurrentBoard) {
-            setCurrentBoard(updatedCurrentBoard);
-            if (selectedBoard?.id === updatedCurrentBoard.id) {
-                setSelectedBoard(updatedCurrentBoard);
-            }
-        }
-    };
+    const boardIds = [
+        ...(data?.ownedBoards?.map((b) => b._id) || []),
+        ...(data?.memberBoards?.map((b) => b._id) || []),
+    ]
+    // Custom hooks
+    useBoardSocket(boardIds);
+    useCardSocket(boardIds);
 
     return (
-        <div className="flex h-screen bg-gray-50">
-            <Sidebar />
-            <div className='w-full'>
-                <Outlet />
+        <>
+            <NotificationListener />
+            <div className="flex h-screen bg-gray-50">
+                <Sidebar />
+                <div className='w-full'>
+                    <Outlet />
+                </div>
             </div>
-            {/* {selectedBoard ? (
-                <BoardView board={selectedBoard} onUpdateBoard={updateBoard} />
-            ) : (
-                <AllBoardsView boards={boards} onSelectBoard={handleSelectBoard} />
-            )} */}
-        </div>
+        </>
     );
 };
 
