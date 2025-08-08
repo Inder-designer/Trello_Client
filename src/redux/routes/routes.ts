@@ -47,6 +47,7 @@ export const CARD_COMMENT_REACT = `/react-comment`
 
 export const NOTIFICATION_GET = `/notifications`
 export const NOTIFICATION_READ = `/notification/read`
+export const VIDEO_CALL = `/agora-token`
 
 // Upload
 export const UPLOAD_SINGLE = "/upload-single"

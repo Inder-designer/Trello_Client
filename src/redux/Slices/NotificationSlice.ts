@@ -1,8 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { read } from "fs";
 
 const initialState = {
-    notifications: []
+    notificationData: {
+        notifications: [],
+        pagination: {}
+    }
 };
 
 const notificationSlice = createSlice({
@@ -10,16 +12,23 @@ const notificationSlice = createSlice({
     initialState,
     reducers: {
         setNotifications(state, action) {
-            state.notifications = action.payload;
+            state.notificationData = action.payload;
         },
         appendNotifications(state, action) {
-            state.notifications = [...state.notifications, ...action.payload]; // appends
+            const existingIds = new Set(state.notificationData.notifications.map(n => n._id));
+            const newOnes = action.payload.notifications.filter(n => !existingIds.has(n._id));
+
+            state.notificationData = {
+                ...state.notificationData,
+                notifications: [...state.notificationData.notifications, ...newOnes],
+                pagination: action.payload.pagination
+            };
         },
         addNotification(state, action) {
-            state.notifications.unshift(action.payload);
+            state.notificationData.notifications.unshift(action.payload);
         },
         removeNotification(state, action) {
-            state.notifications = state.notifications.filter(
+            state.notificationData.notifications = state.notificationData.notifications.filter(
                 (notification) => notification.id !== action.payload.id
             );
         },
@@ -27,7 +36,7 @@ const notificationSlice = createSlice({
             const { id, read } = action.payload;
             console.log("Reading notification:", id, "Read status:", read);
 
-            const notification = state.notifications.find(
+            const notification = state.notificationData.notifications.find(
                 (notification) => notification._id === id
             );
             if (notification) {

@@ -1,5 +1,5 @@
 import { useNotificationReadMutation, useNotificationsQuery } from '@/redux/api/common';
-import { readNotification, setNotifications } from '@/redux/Slices/NotificationSlice';
+import { appendNotifications, readNotification, setNotifications } from '@/redux/Slices/NotificationSlice';
 import { Switch } from '@mui/material';
 import { formatDistanceToNow, set } from 'date-fns';
 import { Bell, BellDot } from 'lucide-react'
@@ -11,63 +11,87 @@ import Loader from '../Loaders/Loader';
 
 interface NotificationState {
   notification: {
-    notifications: {
-      _id: string;
-      type: string;
-      board: {
-        boardId: {
-          _id: string;
-          title: string;
-          background: string;
-        }
-        action: string;
-      }
-      card: {
+    notificationData: {
+      notifications: {
         _id: string;
-        action: string;
-        cardId: {
-          _id: string;
-          shortLink: string;
-          title: string;
-          listId: {
+        type: string;
+        board: {
+          boardId: {
+            _id: string;
             title: string;
+            background: string;
+          }
+          action: string;
+        }
+        card: {
+          _id: string;
+          action: string;
+          cardId: {
+            _id: string;
+            shortLink: string;
+            title: string;
+            listId: {
+              title: string;
+            };
+          };
+          boardId: {
+            _id: string;
+            title: string;
+            background: string;
+          };
+          comment: {
+            _id: string;
+            message: string;
+            createdAt: string;
           };
         };
-        boardId: {
-          _id: string;
-          title: string;
-          background: string;
+        createdBy: {
+          initials: string;
+          fullName: string;
         };
-        comment: {
-          _id: string;
-          message: string;
-          createdAt: string;
-        };
+        read: boolean;
+        createdAt: string;
+      }[];
+      pagination: {
+        page: number;
+        totalPages: number;
+        totalItems: number;
       };
-      createdBy: {
-        initials: string;
-        fullName: string;
-      };
-      read: boolean;
-      createdAt: string;
-    }[];
+    }
   };
 }
 
 const Notification = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
   const [unRead, setUnRead] = useState(true);
-  const { notifications } = useSelector((state: NotificationState) => state.notification);
+  const { notificationData } = useSelector((state: NotificationState) => state.notification);
+  console.log(notificationData);
+  const notifications = notificationData?.notifications || [];
+  const [pagination, setPagination] = useState(notificationData?.pagination);
+
+
   const [notificationRead] = useNotificationReadMutation();
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const bellButtonRef = useRef<HTMLButtonElement>(null);
 
-  const { data, isLoading, isFetching } = useNotificationsQuery({ unRead });
+  const { data: newNotifications, isLoading, isFetching } = useNotificationsQuery({ page, limit, unRead });
+  console.log("New Notifications:", newNotifications);
+
   useEffect(() => {
-    dispatch(setNotifications(data || []));
-  }, [data]);
+    if (newNotifications) {
+      if (page === 1) {
+        dispatch(setNotifications(newNotifications));
+      } else {
+        dispatch(appendNotifications(newNotifications));
+      }
+      setPagination(newNotifications.pagination);
+    }
+  }, [newNotifications, page, dispatch]);
+  console.log("Notifications:", notifications);
 
   // Handle click outside to close notification
   useEffect(() => {
@@ -103,6 +127,23 @@ const Notification = () => {
     navigate(`/board/${notification.card.boardId._id}?c=${cardId}`);
     setIsNotificationOpen(false);
   }
+  useEffect(() => {
+    const container = notificationRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      if (
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 50 &&
+        !isFetching &&
+        pagination.page < pagination.totalPages
+      ) {
+        setPage(prev => prev + 1);
+      }
+    };
+
+    container.addEventListener("scroll", handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
+  }, [isFetching, pagination]);
 
   return (
     <>
@@ -142,103 +183,110 @@ const Notification = () => {
             <button className='text-xs font-medium text-gray-500 hover:underline hover:text-gray-700'>Mark all as read</button>
           </div>
           <ul className='flex flex-col gap-2 px-3 py-4'>
-            {isLoading || isFetching ?
+            {isFetching && page === 1 ?
               <div className='flex items-center justify-center py-4'>
                 <Loader type='bar' h='40' />
               </div>
               :
               filteredNotifications.length > 0 ? (
-                filteredNotifications.map((notification, index) => (
-                  <li key={index} className='flex items-start gap-2'>
-                    {notification.type === 'card' ?
-                      <div className="rounded border-b border-gray-200 overflow-hidden w-full">
-                        <div className={`p-2 flex flex-col gap-2 ${notification?.card?.boardId?.background}`}>
-                          <div className='bg-white/40 hover:bg-white/50 cursor-pointer duration-300 px-2 py-1.5 rounded' onClick={() => handleNavigate(notification)}>
-                            <h3 className='text-white font-semibold text-sm'>{notification?.card?.cardId?.title}</h3>
+                <>
+                  {filteredNotifications.map((notification, index) => (
+                    <li key={index} className='flex items-start gap-2'>
+                      {notification.type === 'card' ?
+                        <div className="rounded border-b border-gray-100 overflow-hidden w-full">
+                          <div className={`p-2 flex flex-col gap-2 ${notification?.card?.boardId?.background}`}>
+                            <div className='bg-white/40 hover:bg-white/50 cursor-pointer duration-300 px-2 py-1.5 rounded' onClick={() => handleNavigate(notification)}>
+                              <h3 className='text-white font-semibold text-sm'>{notification?.card?.cardId?.title}</h3>
+                            </div>
+                            <p className='text-xs text-white'><span className='capitalize font-bold'>{notification?.card?.boardId?.title}:</span> <span className='capitalize font-medium'>{notification?.card?.cardId?.listId?.title}</span></p>
                           </div>
-                          <p className='text-xs text-white'><span className='capitalize font-bold'>{notification?.card?.boardId?.title}:</span> <span className='capitalize font-medium'>{notification?.card?.cardId?.listId?.title}</span></p>
-                        </div>
-                        <div className='bg-gray-200 p-2 border-t border-gray-300'>
-                          <div >
-                            <div className="flex items-start gap-2">
-                              <span className='min-w-7 w-7 h-7 rounded-full text-xs flex items-center justify-center bg-red-400 text-white font-medium'>{notification?.createdBy?.initials}</span>
-                              <div className='flex flex-col w-full'>
-                                <div className='flex justify-between items-center w-full'>
-                                  <span className='text-sm capitalize font-semibold'>{notification?.createdBy?.fullName}</span>
-                                  <span className='text-xs text-gray-500'>{formatDistanceToNow(new Date(notification?.createdAt), { addSuffix: true })}</span>
-                                </div>
-                                <div className='flex flex-col mt-1'>
-                                  {notification?.card?.action === 'moved' ?
-                                    <div className='flex items-center gap-1 font-medium'>
-                                      <span className='text-xs text-gray-600'>Moved to list: </span>
-                                      <span className='text-xs text-gray-600'>{notification?.card?.cardId?.listId?.title}</span>
-                                    </div>
-                                    :
-                                    (notification?.card?.action === 'addMemberToCard' || notification?.card?.action === 'removeMemberFromCard') ?
+                          <div className='bg-gray-200/80 p-2 border-t border-gray-300'>
+                            <div >
+                              <div className="flex items-start gap-2">
+                                <span className='min-w-7 w-7 h-7 rounded-full text-xs flex items-center justify-center bg-red-400 text-white font-medium'>{notification?.createdBy?.initials}</span>
+                                <div className='flex flex-col w-full'>
+                                  <div className='flex justify-between items-center w-full'>
+                                    <span className='text-sm capitalize font-semibold'>{notification?.createdBy?.fullName}</span>
+                                    <span className='text-xs text-gray-500'>{formatDistanceToNow(new Date(notification?.createdAt), { addSuffix: true })}</span>
+                                  </div>
+                                  <div className='flex flex-col mt-1'>
+                                    {notification?.card?.action === 'moved' ?
                                       <div className='flex items-center gap-1 font-medium'>
-                                        <span className='text-xs text-gray-600'>{notification?.card?.action === 'addMemberToCard' ? 'Added you to card' : 'Removed you from card'}</span>
+                                        <span className='text-xs text-gray-600'>Moved to list: </span>
+                                        <span className='text-xs text-gray-600'>{notification?.card?.cardId?.listId?.title}</span>
                                       </div>
                                       :
-                                      <div
-                                        className='bg-gray-600 px-2 py-1.5 rounded w-fit cursor-pointer'
-                                        onClick={() => {
-                                          const cardId = notification.card.cardId.shortLink || notification.card.cardId._id;
-                                          navigate(`/board/${notification.card.boardId._id}?c=${cardId}&comment=${notification.card.comment._id}`);
-                                          setIsNotificationOpen(false);
-                                        }}
-                                      >
-                                        <p className='text-white text-xs'>{notification?.card?.comment?.message}</p>
-                                      </div>
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      :
-                      <div className="rounded border-b border-gray-200 overflow-hidden w-full">
-                        <div className={`p-2 flex flex-col gap-2 ${notification?.board?.boardId?.background}`}>
-                          <h3 className='text-white font-semibold text-sm'>{notification?.board?.boardId?.title}</h3>
-                        </div>
-                        <div className='bg-gray-200 p-2 border-t border-gray-300'>
-                          <div >
-                            <div className="flex items-start gap-2">
-                              <span className='min-w-7 w-7 h-7 rounded-full text-xs flex items-center justify-center bg-red-400 text-white font-medium'>{notification?.createdBy?.initials}</span>
-                              <div className='flex flex-col w-full'>
-                                <div className='flex justify-between items-center w-full'>
-                                  <span className='text-sm capitalize font-semibold'>{notification?.createdBy?.fullName}</span>
-                                  <span className='text-xs text-gray-500'>{formatDistanceToNow(new Date(notification?.createdAt), { addSuffix: true })}</span>
-                                </div>
-                                <div className='flex flex-col mt-1'>
-                                  <div className='flex items-center gap-1 font-medium'>
-                                    <span className='text-xs text-gray-600'>{notification.board.action === "reopenBoard" ? "Reopened" : "Closed"} the board <Link to={`/board/${notification.board.boardId._id}`} className='text-blue-500 underline'>{notification.board.boardId.title}</Link></span>
+                                      (notification?.card?.action === 'addMemberToCard' || notification?.card?.action === 'removeMemberFromCard') ?
+                                        <div className='flex items-center gap-1 font-medium'>
+                                          <span className='text-xs text-gray-600'>{notification?.card?.action === 'addMemberToCard' ? 'Added you to card' : 'Removed you from card'}</span>
+                                        </div>
+                                        :
+                                        <div
+                                          className='bg-gray-600 px-2 py-1.5 rounded w-fit cursor-pointer'
+                                          onClick={() => {
+                                            const cardId = notification.card.cardId.shortLink || notification.card.cardId._id;
+                                            navigate(`/board/${notification.card.boardId._id}?c=${cardId}&comment=${notification.card.comment._id}`);
+                                            setIsNotificationOpen(false);
+                                          }}
+                                        >
+                                          <p className='text-white text-xs'>{notification?.card?.comment?.message}</p>
+                                        </div>
+                                    }
                                   </div>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    }
+                        :
+                        <div className="rounded border-b border-gray-100 overflow-hidden w-full">
+                          <div className={`p-2 flex flex-col gap-2 ${notification?.board?.boardId?.background}`}>
+                            <h3 className='text-white font-semibold text-sm'>{notification?.board?.boardId?.title}</h3>
+                          </div>
+                          <div className='bg-gray-200/80 p-2 border-t border-gray-300'>
+                            <div >
+                              <div className="flex items-start gap-2">
+                                <span className='min-w-7 w-7 h-7 rounded-full text-xs flex items-center justify-center bg-red-400 text-white font-medium'>{notification?.createdBy?.initials}</span>
+                                <div className='flex flex-col w-full'>
+                                  <div className='flex justify-between items-center w-full'>
+                                    <span className='text-sm capitalize font-semibold'>{notification?.createdBy?.fullName}</span>
+                                    <span className='text-xs text-gray-500'>{formatDistanceToNow(new Date(notification?.createdAt), { addSuffix: true })}</span>
+                                  </div>
+                                  <div className='flex flex-col mt-1'>
+                                    <div className='flex items-center gap-1 font-medium'>
+                                      <span className='text-xs text-gray-600'>{notification.board.action === "reopenBoard" ? "Reopened" : "Closed"} the board <Link to={`/board/${notification.board.boardId._id}`} className='text-blue-500 underline'>{notification.board.boardId.title}</Link></span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      }
 
-                    <Tooltip title={!notification?.read ? "Mark read" : ""} arrow={false}>
-                      <button
-                        className={`w-5 h-5 rounded flex items-center justify-center duration-300 ${notification?.read ? 'cursor-default' : 'hover:bg-blue-200/70'}`}
-                        onClick={!notification?.read ? async () => {
-                          dispatch(readNotification({ id: notification?._id, read: true }));
-                          await notificationRead(notification?._id).catch((err) => {
-                            dispatch(readNotification({ id: notification?._id, read: false }));
-                          });
-                        } : undefined}
-                      >
-                        {!notification?.read &&
-                          <span className='bg-blue-600 rounded-full w-3 h-3 inline-block'></span>
-                        }
-                      </button>
-                    </Tooltip>
-                  </li>
-                ))
+                      <Tooltip title={!notification?.read ? "Mark read" : ""} arrow={false}>
+                        <button
+                          className={`w-5 h-5 rounded flex items-center justify-center duration-300 ${notification?.read ? 'cursor-default' : 'hover:bg-blue-200/70'}`}
+                          onClick={!notification?.read ? async () => {
+                            dispatch(readNotification({ id: notification?._id, read: true }));
+                            await notificationRead(notification?._id).catch((err) => {
+                              dispatch(readNotification({ id: notification?._id, read: false }));
+                            });
+                          } : undefined}
+                        >
+                          {!notification?.read &&
+                            <span className='bg-blue-600 rounded-full w-3 h-3 inline-block'></span>
+                          }
+                        </button>
+                      </Tooltip>
+                    </li>
+                  ))}
+                  {isFetching && page > 1 && (
+                    <li className='flex items-center justify-center py-4'>
+                      <Loader type='bar' h='40' />
+                    </li>
+                  )}
+                </>
               ) : (
                 <li className="p-4 text-gray-500 text-center">No notifications</li>
               )}

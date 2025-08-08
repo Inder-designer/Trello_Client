@@ -1,6 +1,6 @@
 import { ApiResponse } from "../../Types/ApiResponse";
 import { baseApi } from "../baseApi";
-import { NOTIFICATION_GET, NOTIFICATION_READ, UPLOAD_MULTI, UPLOAD_SINGLE } from "../routes/routes";
+import { NOTIFICATION_GET, NOTIFICATION_READ, UPLOAD_MULTI, UPLOAD_SINGLE, VIDEO_CALL } from "../routes/routes";
 
 export const carApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
@@ -35,7 +35,11 @@ export const carApi = baseApi.injectEndpoints({
             }),
             transformResponse: (response: ApiResponse) => response.data
         }),
+        videoCall: builder.query({
+            query: ({ channelName, uid }) => `${VIDEO_CALL}?channelName=${channelName}&uid=${uid}`,
+            transformResponse: (response: ApiResponse) => response.data
+        })
     }),
 });
 
-export const { useUploadSingleMutation, useUploadMultiMutation, useNotificationsQuery, useNotificationReadMutation } = carApi;
+export const { useUploadSingleMutation, useUploadMultiMutation, useNotificationsQuery, useNotificationReadMutation, useVideoCallQuery } = carApi;

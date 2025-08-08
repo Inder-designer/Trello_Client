@@ -14,9 +14,10 @@ import { store } from "./redux/store/store";
 import Login from "./pages/Auth/Login";
 import Signup from "./pages/Auth/Signup";
 import { useEffect } from "react";
-import { io } from "socket.io-client";
 import { setUser } from "@/redux/Slices/userAuthSlice";
 import { useGetMeQuery } from "./redux/api/user.ts";
+import { AgoraProvider } from "./Context/AgoraProvider.tsx";
+import VideoRoom from "./pages/VideoRoom/VideoRoom.tsx";
 
 const queryClient = new QueryClient();
 
@@ -36,26 +37,29 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <AppInitializer />
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Layout />}>
-                <Route path="/boards" element={<AllBoards />} />
-                <Route path="/board/:id" element={<Project />} />
-                <Route path="/invite/:id" element={<VerifyInviteToken />} />
-                <Route path="/invite/:id" element={<VerifyInviteToken />} />
-                <Route path="/invite/accept-board" element={<AcceptBoard />} />
-              </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+        <AgoraProvider>
+          <AppInitializer />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Layout />}>
+                  <Route path="/boards" element={<AllBoards />} />
+                  <Route path="/board/:id" element={<Project />} />
+                  <Route path="/invite/:id" element={<VerifyInviteToken />} />
+                  <Route path="/invite/:id" element={<VerifyInviteToken />} />
+                  <Route path="/invite/accept-board" element={<AcceptBoard />} />
+                  <Route path="/video-room" element={<VideoRoom />} />
+                </Route>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AgoraProvider>
       </Provider>
     </QueryClientProvider>
   );
