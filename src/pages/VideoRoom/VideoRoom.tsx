@@ -71,8 +71,9 @@ const VideoRoom = () => {
         (async () => {
             try {
                 await client.join(agoraAppId, CHANNEL, rtcToken, UID);
-                await client.publish(localAudioTrack);
-                await client.publish(localVideoTrack);
+                // Publish both tracks together as an array
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await client.publish([localAudioTrack, localVideoTrack] as any);
                 joined = true;
             } catch (err) {
                 console.error("Agora join error:", err);
